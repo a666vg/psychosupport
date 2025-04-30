@@ -316,15 +316,28 @@ class GoogleSheets:
                 print(sheet_obj.title, '- Добавьте лист в IGNOR_WORKSHEETS')
                 return None
             date_today = datetime.now(tz=tz)
-            if date_today.date() == date_sheet:
+            if date_today.date() == date_sheet.date():
                 with lock:
                     all_val = sheet_obj.get_all_records()
-                lst_records.extend(
-                    [sheet_obj.title.strip(), k.strip(), dct[NAME_COL_SERVICE].strip(), dct[NAME_COL_MASTER].strip()]
-                    for dct in all_val
-                    for k, v in dct.items()
-                    if v == client_record and k == date_today.time() < datetime.strptime(k, '%H:%M').time()
-                )
+                for dct in all_val:
+                    for k, v in dct.items():
+                        if v == client_record:
+                            try:
+                                record_time = datetime.strptime(k, '%H:%M').time()
+                                if date_today.time() < record_time:
+                                    print("Запись найдена:")
+                                    print([sheet_obj.title.strip(), k.strip(), dct[NAME_COL_SERVICE].strip(),
+                                           dct[NAME_COL_MASTER].strip()])
+                                    lst_records.append(
+                                        [sheet_obj.title.strip(), k.strip(), dct[NAME_COL_SERVICE].strip(),
+                                         dct[NAME_COL_MASTER].strip()]
+                                    )
+                                else:
+                                    # print("Пропущена (время уже прошло)")
+                                    pass
+
+                            except Exception as e:
+                                print(f"Ошибка при разборе времени: {e}, значение ключа: {k}")
 
             elif date_today.date() < date_sheet.date() <= (date_today + timedelta(days=count_days)).date():
                 with lock:
